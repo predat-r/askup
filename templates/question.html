@@ -198,6 +198,28 @@
         font-size: 0.875rem;
     }
     
+    .delete-btn {
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .delete-btn:hover {
+        background: #fecaca;
+    }
+    
+    .delete-btn i {
+        font-size: 0.9em;
+    }
+    
     .answer-form {
         background: white;
         border-radius: 12px;
@@ -269,6 +291,14 @@
                         Asked by <strong>{{ question.username }}</strong> 
                         on {{ question.created_at.strftime('%B %d, %Y at %I:%M %p') }}
                     </div>
+                    {% if current_user and current_user._id|string == question.user_id|string %}
+                    <form action="{{ url_for('delete_question', question_id=question._id) }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="delete-btn" 
+                                onclick="return confirm('Are you sure you want to delete this question? This action cannot be undone.')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

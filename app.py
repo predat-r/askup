@@ -268,6 +268,34 @@ def profile(username):
                          answers=user_answers, 
                          current_user=get_current_user())
 
+@app.route('/question/delete/<question_id>', methods=['POST'])
+@login_required
+def delete_question(question_id):
+    try:
+        question = questions_collection.find_one({'_id': ObjectId(question_id)})
+        
+        # Check if question exists and user is the owner
+        if not question:
+            flash('Question not found')
+            return redirect(url_for('index'))
+            
+        if str(question['user_id']) != session['user_id']:
+            flash('You can only delete your own questions')
+            return redirect(url_for('view_question', question_id=question_id))
+            
+        # Delete all answers first
+        answers_collection.delete_many({'question_id': ObjectId(question_id)})
+        # Then delete the question
+        questions_collection.delete_one({'_id': ObjectId(question_id)})
+        
+        flash('Question and its answers have been deleted')
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        app.logger.exception("Error deleting question")
+        flash('An error occurred while deleting the question')
+        return redirect(url_for('index'))
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '')
