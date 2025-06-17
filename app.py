@@ -20,10 +20,8 @@ monitoring._TOPOLOGY_LOGGER = None
 monitoring._CONNECTION_LOGGER = None
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'  # Change this to a secure secret key
-
-# MongoDB connection - replace with your hosted MongoDB URL
-MONGO_URL = "mongodb+srv://apexpredatorg6:ZTtRzoOUgj5BL8eI@cluster0.lyfomwl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+app.secret_key =  os.getenv('SECRET_KEY')  
+MONGO_URL = os.getenv('MONGO_URL')
 try:
     client = MongoClient(MONGO_URL)
     db = client.askup
