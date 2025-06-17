@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Search{% if query %} - {{ query }}{% endif %} - Askup{% endblock %}
+
+{% block content %}
+<style>
+    .search-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .search-header {
+        margin-bottom: 2rem;
+    }
+    
+    .search-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .search-info {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .question-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .question-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .question-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .question-title:hover {
+        color: #3b82f6;
+    }
+    
+    .question-content {
+        color: #6b7280;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+    
+    .question-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+    
+    .question-stats {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .stat {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .tags {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .tag {
+        background: #f3f4f6;
+        color: #6b7280;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+    
+    .no-results h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .no-results p {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+    }
+    
+    .search-suggestions {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .search-suggestions h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .search-suggestions ul {
+        list-style: none;
+        color: #6b7280;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    
+    .search-suggestions li {
+        margin-bottom: 0.25rem;
+    }
+</style>
+
+<div class="search-container">
+    <div class="search-header">
+        {% if query %}
+            <h1 class="search-title">Search Results for "{{ query }}"</h1>
+            <div class="search-info">
+                Found {{ questions|length }} result{{ 's' if questions|length != 1 else '' }}
+            </div>
+        {% else %}
+            <h1 class="search-title">Search Questions</h1>
+            <div class="search-info">Enter a search term to find questions</div>
+        {% endif %}
+    </div>
+    
+    {% if query %}
+        {% if questions %}
+            {% for question in questions %}
+            <div class="question-item">
+                <a href="{{ url_for('view_question', question_id=question._id) }}" class="question-title">
+                    {{ question.title }}
+                </a>
+                
+                {% if question.content %}
+                <div class="question-content">
+                    {{ question.content[:200] }}{% if question.content|length > 200 %}...{% endif %}
+                </div>
+                {% endif %}
+                
+                {% if question.tags %}
+                <div class="tags">
+                    {% for tag in question.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="question-meta">
+                    <div>
+                        Asked by <strong>{{ question.username }}</strong> 
+                        on {{ question.created_at.strftime('%B %d, %Y') }}
+                    </div>
+                    
+                    <div class="question-stats">
+                        <div class="stat">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span>{{ question.votes or 0 }}</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-comment"></i>
+                            <span>{{ question.answer_count or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>No results found</h3>
+                <p>We couldn't find any questions matching "{{ query }}"</p>
+                
+                <div class="search-suggestions">
+                    <h4>Search Tips:</h4>
+                    <ul>
+                        <li>• Try different or more general keywords</li>
+                        <li>• Check your spelling</li>
+                        <li>• Use fewer keywords</li>
+                        <li>• Search for tags or topics</li>
+                    </ul>
+                </div>
+                
+                {% if current_user %}
+                <a href="{{ url_for('ask_question') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                    Ask This Question
+                </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="no-results">
+            <i class="fas fa-search"></i>
+            <h3>Start Searching</h3>
+            <p>Use the search bar above to find questions and answers</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Askup - Ask & Answer Questions{% endblock %}
+
+{% block content %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 3rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .hero p {
+        font-size: 1.125rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .question-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .question-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .question-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .question-title:hover {
+        color: #3b82f6;
+    }
+    
+    .question-content {
+        color: #6b7280;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+    
+    .question-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+    
+    .question-stats {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .stat {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .tags {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .tag {
+        background: #f3f4f6;
+        color: #6b7280;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .no-questions {
+        text-align: center;
+        padding: 3rem;
+        color: #6b7280;
+    }
+    
+    .no-questions i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+</style>
+
+{% if not current_user %}
+<div class="hero">
+    <h1>Welcome to Askup</h1>
+    <p>A place to ask questions, share knowledge, and learn from others. Join our community of curious minds and get answers to your questions.</p>
+</div>
+{% endif %}
+
+<div class="questions-section">
+    {% if questions %}
+        <h2 style="margin-bottom: 1.5rem; color: #1f2937; font-size: 1.5rem; font-weight: 600;">
+            Recent Questions
+        </h2>
+        
+        {% for question in questions %}
+        <div class="question-item">
+            <a href="{{ url_for('view_question', question_id=question._id) }}" class="question-title">
+                {{ question.title }}
+            </a>
+            
+            {% if question.content %}
+            <div class="question-content">
+                {{ question.content[:200] }}{% if question.content|length > 200 %}...{% endif %}
+            </div>
+            {% endif %}
+            
+            {% if question.tags %}
+            <div class="tags">
+                {% for tag in question.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="question-meta">
+                <div>
+                    Asked by <strong>{{ question.username }}</strong> 
+                    on {{ question.created_at.strftime('%B %d, %Y') }}
+                </div>
+                
+                <div class="question-stats">
+                    <div class="stat">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span>{{ question.votes or 0 }}</span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-comment"></i>
+                        <span>{{ question.answer_count or 0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-questions">
+            <i class="fas fa-question-circle"></i>
+            <h3>No questions yet</h3>
+            <p>Be the first to ask a question!</p>
+            {% if current_user %}
+                <a href="{{ url_for('ask_question') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                    Ask First Question
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

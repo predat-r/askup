@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} - Profile - Askup{% endblock %}
+
+{% block content %}
+<style>
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .profile-header {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        font-weight: bold;
+        margin: 0 auto 1rem;
+    }
+    
+    .profile-name {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .profile-info {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .profile-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #3b82f6;
+        display: block;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .profile-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .item:last-child {
+        border-bottom: none;
+    }
+    
+    .item-title {
+        font-weight: 600;
+        color: #1f2937;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .item-title:hover {
+        color: #3b82f6;
+    }
+    
+    .item-meta {
+        color: #6b7280;
+        font-size: 0.875rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .item-stats {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .item-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .no-content {
+        text-align: center;
+        padding: 2rem;
+        color: #6b7280;
+    }
+    
+    .no-content i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .profile-stats {
+            gap: 1rem;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {{ user.username[0].upper() }}
+        </div>
+        
+        <h1 class="profile-name">{{ user.username }}</h1>
+        <div class="profile-info">
+            Member since {{ user.created_at.strftime('%B %Y') }}
+        </div>
+        
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ questions|length }}</span>
+                <span class="stat-label">Questions</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ answers|length }}</span>
+                <span class="stat-label">Answers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">
+                    {{ (questions | sum(attribute='votes') or 0) + (answers | sum(attribute='votes') or 0) }}
+                </span>
+                <span class="stat-label">Total Votes</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-content">
+        <div class="section">
+            <h2 class="section-title">Questions ({{ questions|length }})</h2>
+            
+            {% if questions %}
+                {% for question in questions %}
+                <div class="item">
+                    <a href="{{ url_for('view_question', question_id=question._id) }}" class="item-title">
+                        {{ question.title }}
+                    </a>
+                    <div class="item-meta">
+                        <span>{{ question.created_at.strftime('%B %d, %Y') }}</span>
+                        <div class="item-stats">
+                            <div class="item-stat">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>{{ question.votes or 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-content">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>No questions yet</h3>
+                    <p>{{ user.username }} hasn't asked any questions</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Answers ({{ answers|length }})</h2>
+            
+            {% if answers %}
+                {% for answer in answers %}
+                <div class="item">
+                    <a href="{{ url_for('view_question', question_id=answer.question_id) }}" class="item-title">
+                        {{ answer.question_title }}
+                    </a>
+                    <div class="item-meta">
+                        <span>{{ answer.created_at.strftime('%B %d, %Y') }}</span>
+                        <div class="item-stats">
+                            <div class="item-stat">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>{{ answer.votes or 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-content">
+                    <i class="fas fa-comment"></i>
+                    <h3>No answers yet</h3>
+                    <p>{{ user.username }} hasn't answered any questions</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
