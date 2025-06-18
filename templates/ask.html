@@ -4,6 +4,52 @@
 
 {% block content %}
 <style>
+    /* AI Answer Toggle Switch */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: #4f46e5;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+    
     .ask-container {
         max-width: 800px;
         margin: 0 auto;
@@ -173,6 +219,21 @@
             <input type="text" id="tags" name="tags" class="form-input" 
                    placeholder="e.g. python, flask, web-development"
                    style="margin-top: 0.75rem;">
+        </div>
+        
+        <div class="form-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <label class="form-label" style="margin-bottom: 0;">Allow AI to answer this question</label>
+                    <div class="form-help">
+                        Get an instant AI-generated answer to help you while you wait for community responses.
+                    </div>
+                </div>
+                <label class="switch" style="margin-left: 1rem;">
+                    <input type="checkbox" name="allow_ai_answers" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
         
         <div class="form-actions">

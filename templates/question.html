@@ -178,6 +178,26 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         display: flex;
         gap: 1rem;
+        position: relative;
+    }
+    
+    .answer-item.ai-answer {
+        border-left: 4px solid #10b981; /* Green border for AI answers */
+    }
+    
+    .ai-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: #d1fae5; /* Light green background */
+        color: #065f46; /* Dark green text */
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
     
     .answer-content {
@@ -311,9 +331,15 @@
         
         {% if answers %}
             {% for answer in answers %}
-            <div class="answer-item">
+            <div class="answer-item {% if answer.is_ai %}ai-answer{% endif %}">
+                {% if answer.is_ai %}
+                <div class="ai-badge">
+                    <i class="fas fa-robot"></i> AI Answer
+                </div>
+                {% endif %}
+                
                 <div class="vote-section">
-                    {% if current_user %}
+                    {% if current_user and not answer.is_ai %}
                     <button class="vote-btn" onclick="vote('answer', '{{ answer._id }}', 'up')">
                         <i class="fas fa-chevron-up"></i>
                     </button>
@@ -321,7 +347,7 @@
                     
                     <span class="vote-count" id="answer-votes-{{ answer._id }}">{{ answer.votes or 0 }}</span>
                     
-                    {% if current_user %}
+                    {% if current_user and not answer.is_ai %}
                     <button class="vote-btn" onclick="vote('answer', '{{ answer._id }}', 'down')">
                         <i class="fas fa-chevron-down"></i>
                     </button>

@@ -7,6 +7,12 @@ from datetime import datetime
 import logging
 from functools import wraps
 import warnings
+import logging
+import requests
+import json
+import threading
+from time import sleep
+from bson import json_util
 
 # Disable PyMongo debug logs
 logging.getLogger('pymongo').setLevel(logging.WARNING)
@@ -22,6 +28,13 @@ monitoring._CONNECTION_LOGGER = None
 app = Flask(__name__)
 app.secret_key =  os.getenv('SECRET_KEY')  
 MONGO_URL = os.getenv('MONGO_URL')
+
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
 try:
     client = MongoClient(MONGO_URL)
     db = client.askup
@@ -109,6 +122,69 @@ def logout():
     flash('You have been logged out')
     return redirect(url_for('index'))
 
+def generate_ai_answer(question_id, question_title, question_content):
+    """Background task to generate and save AI answer"""
+    def _generate():
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        
+        headers = {
+            "Authorization": os.getenv('OPENROUTER_API_KEY'),
+            "Content-Type": "application/json"
+        }
+        
+        prompt = f"""You are a helpful AI assistant on a Q&A platform called Askup. 
+        Please provide a clear, concise, and helpful answer to the following question:
+        
+        {question_title}
+        {question_content}
+        
+        IMPORTANT: Your answer should be in plain text format only. 
+        - Do NOT use markdown formatting (no **bold**, *italics*, ## headers, etc.)
+        - Do NOT include any special characters for formatting
+        - Use simple line breaks for paragraphs
+        - Keep the response clean and easy to read
+        
+        Your answer should be well-structured and directly address the question. 
+        If the question is unclear or lacks context, you can ask for clarification."""
+        
+        data = {
+            "model": "deepseek/deepseek-chat-v3-0324",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+            ai_answer = result['choices'][0]['message']['content'].strip()
+            
+            # Save the AI answer
+            answers_collection.insert_one({
+                'content': ai_answer,
+                'question_id': question_id,
+                'user_id': None,  # No user ID for AI answers
+                'is_ai': True,
+                'created_at': datetime.utcnow(),
+                'votes': 0,
+                'voted_by': []
+            })
+            
+            # Update question to indicate it has an AI answer
+            questions_collection.update_one(
+                {'_id': question_id},
+                {'$set': {'has_ai_answer': True}}
+            )
+            
+        except Exception as e:
+            print(f"Error in AI answer generation: {str(e)}")
+    
+    # Start the background task
+    thread = threading.Thread(target=_generate)
+    thread.daemon = True
+    thread.start()
+
 @app.route('/ask', methods=['GET', 'POST'])
 @login_required
 def ask_question():
@@ -116,27 +192,35 @@ def ask_question():
         title = request.form['title']
         content = request.form['content']
         tags = [tag.strip() for tag in request.form['tags'].split(',') if tag.strip()]
+        allow_ai_answers = 'allow_ai_answers' in request.form
         
-        questions_collection.insert_one({
+        # Insert the question
+        question = {
             'title': title,
             'content': content,
             'tags': tags,
             'user_id': ObjectId(session['user_id']),
             'created_at': datetime.utcnow(),
             'votes': 0,
-            'voted_by': []
-        })
+            'voted_by': [],
+            'allow_ai_answers': allow_ai_answers,
+            'has_ai_answer': False
+        }
         
-        flash('Question posted successfully!')
-        return redirect(url_for('index'))
+        result = questions_collection.insert_one(question)
+        question_id = result.inserted_id
+        
+        # If AI answers are allowed, start background task to generate answer
+        if allow_ai_answers:
+            generate_ai_answer(question_id, title, content)
+        
+        flash('Question posted successfully! AI is generating an answer...')
+        return redirect(url_for('view_question', question_id=question_id))
     
-    return render_template('ask.html', current_user=get_current_user())
+    elif request.method == 'GET':
+        return render_template('ask.html', current_user=get_current_user())
+    
 
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 @app.route('/question/<question_id>')
 def view_question(question_id):
@@ -165,14 +249,17 @@ def view_question(question_id):
             question['username'] = 'Anonymous'
 
         # Fetch answers and authors
-        answers = list(answers_collection.find({'question_id': obj_id}).sort('votes', -1))
+        answers = list(answers_collection.find({'question_id': obj_id}).sort([('is_ai', 1), ('votes', -1)]))  # Sort AI answers first, then by votes
         for answer in answers:
-            user_id = answer.get('user_id')
-            if user_id and ObjectId.is_valid(user_id):
-                author = users_collection.find_one({'_id': ObjectId(user_id)})
-                answer['username'] = author['username'] if author else 'Anonymous'
+            if answer.get('is_ai'):
+                answer['username'] = 'AI Assistant'
             else:
-                answer['username'] = 'Anonymous'
+                user_id = answer.get('user_id')
+                if user_id and ObjectId.is_valid(user_id):
+                    author = users_collection.find_one({'_id': ObjectId(user_id)})
+                    answer['username'] = author['username'] if author else 'Anonymous'
+                else:
+                    answer['username'] = 'Anonymous'
 
         return render_template('question.html', 
                                question=question, 
@@ -249,6 +336,7 @@ def vote(item_type, item_id, vote_type):
 
 @app.route('/profile/<username>')
 def profile(username):
+
     user = users_collection.find_one({'username': username})
     if not user:
         flash('User not found')
